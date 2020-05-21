@@ -9,9 +9,7 @@ class Network(nn.Module):
     
     def __init__(self, stateSize , actionSize , seed , fc1 = 128 , fc2 = 128):
         super(Network,self).__init__()
-        
-        self.seed = torch.manual_seed(seed)
-        
+                
         self.fc1 = nn.Linear(stateSize , fc1)
         self.fc2 = nn.Linear(fc1 , fc2)
         self.fc3 = nn.Linear(fc2 , actionSize)

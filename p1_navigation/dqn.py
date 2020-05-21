@@ -31,7 +31,7 @@ class Agent():
         self.Q = Network(self.state_size , self.action_size , self.seed)
         self.Q_dash = Network(self.state_size,self.action_size , self.seed)
         
-        self.optimizer = optim.Adam(self.Q.local_parameters(), lr = LR)
+        self.optimizer = optim.Adam(self.Q.parameters(), lr = LR)
         
         self.replay = ReplayBuffer(self.seed)
         self.t_step = 0
@@ -49,11 +49,11 @@ class Agent():
     def act(self, state, eps=0.):
         
         state = torch.from_numpy(state).float().unsqueeze(0).to(device)
-        self.qnetwork_local.eval()
+        self.Q.eval()
         with torch.no_grad():
             # done to avoid bt
-            action_values = self.qnetwork_local(state)
-        self.qnetwork_local.train()
+            action_values = self.Q(state)
+        self.Q.train()
 
         # Epsilon-greedy action selection
         if random.random() > eps:
@@ -131,7 +131,7 @@ class Agent():
 class ReplayBuffer():
     
     def __init__(self, seed):
-        self.action_size = action_size
+        
         self.memory = deque(maxlen = BUFFER_SIZE)
         self.experience = namedtuple("Experience", field_names = ["state","action","reward","next_state","done"])
         self.seed = random.seed(seed)
