@@ -38,3 +38,11 @@ The task is episodic, and in order to solve the environment, your agent must get
 ### Instructions
 
 Run Navigation.ipynb sequentially to see the trained agent.  
+
+
+
+
+
+
+
+
