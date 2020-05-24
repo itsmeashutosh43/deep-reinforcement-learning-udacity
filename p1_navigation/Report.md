@@ -23,8 +23,6 @@ The task is episodic, and in order to solve the environment, your agent must get
 
 ### Learning Algorithm 
 
-Double Deep-Q Learning along with experience replay methods were used to solved this environment.
-
 First a vanilla DQN(Deep Q Network) is discussed followed by the description of one of the way to improve it:Experience Replay. Still, some inherent drawbacks of DQNs are highlighted and finally Double Deep Q Learning method is presented. 
 
 #### Q Learning
@@ -84,6 +82,8 @@ A high level algorithm Double DQN Approach is as follows,
         #4
         self.soft_update(self.Q, self.Q_dash, TAU) 
 ```
+
+To Summarize, Double Deep-Q Learning along with experience replay methods were used to solved this environment.
 
 
 ### Hyperparameters
