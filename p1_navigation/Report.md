@@ -38,7 +38,7 @@ Q-Learning algorithm maintains a table for each action value pair and hence its 
 
 #### Deep Q Learning
 
-Since, the state space was large (37**4), we had to use a neural network to map observations(states) to appropriate actions. The neural network with three hidden units were used.
+Since, the state space was large (37^4), we had to use a neural network to map observations(states) to appropriate actions. The neural network with three hidden units were used.
 
 Instead of a tabulated form, each state-action pairs were approprimated with a nonlinear function. However, Reinforcement learning is known to be unstable or even to divergewhen a nonlinear function approximator such as a neural network isused to represent the action-value (also known as Q) function.
 
@@ -113,7 +113,7 @@ UPDATE_EVERY = 6 # Skip the first 5 frames before adding it to memory.
 
 The agent recieves an average score of 17 after about 1000 iteration. The figure below shows the improvement of average score over time.
 
-![Score vs Iteration](images/plot.png)
+![Plot](images/plot.png)
 
 ### Improvements
 
