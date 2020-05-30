@@ -23,8 +23,6 @@ The task is episodic, and in order to solve the environment, your agent must get
 
 ### Learning Algorithm 
 
-Double Deep-Q Learning along with experience replay methods were used to solved this environment.
-
 First a vanilla DQN(Deep Q Network) is discussed followed by the description of one of the way to improve it:Experience Replay. Still, some inherent drawbacks of DQNs are highlighted and finally Double Deep Q Learning method is presented. 
 
 #### Q Learning
@@ -85,6 +83,8 @@ A high level algorithm Double DQN Approach is as follows,
         self.soft_update(self.Q, self.Q_dash, TAU) 
 ```
 
+To Summarize, Double Deep-Q Learning along with experience replay methods were used to solved this environment.
+
 
 ### Hyperparameters
 
@@ -97,16 +97,20 @@ To map state from actions, three layer neural networks were used.
 | Hidden 3 is  |  64           |
 
 
-n_episodes=2000 
-eps_start=1.0 # Total exploration in the first few iterations
-eps_end=0.01 # Less exploration during final iterations
-eps_decay=0.995 
-BUFFER_SIZE = int(1e5) # Experience Memory Size  
-BATCH_SIZE = 64  # Number of memory items to be sampled       
-GAMMA = 0.99            
-TAU = 1e-3              
-LR = 5e-4               
-UPDATE_EVERY = 6 # Skip the first 5 frames before adding it to memory.
+
+| DDQN Params  |      Number   |
+|--------------|:-------------:|
+| n_episodes   |  2000         |
+| eps_start    |  1.0          |
+| eps_end      |  0.01         |
+| eps_decay    |  0.995        |
+| eps_end      |  0.01         |
+| BUFFER_SIZE  |  1e5          |
+| BATCH_SIZE   |  64           |
+| gamma        |  0.99         |
+| TAU          |  1e-4         |
+| Learning rate|  5e-4         |
+| Update_every |  6            |
 
 
 ### Result
