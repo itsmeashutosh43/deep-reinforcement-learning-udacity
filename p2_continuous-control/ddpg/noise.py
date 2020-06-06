@@ -2,6 +2,8 @@ import copy
 import numpy as np
 import random
 
+OU_SIGMA = 0.2          # Ornstein-Uhlenbeck noise parameter
+OU_THETA = 0.15
 
 class OUNoise:
     """Ornstein-Uhlenbeck process."""
