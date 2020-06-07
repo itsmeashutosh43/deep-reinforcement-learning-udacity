@@ -54,7 +54,7 @@ We will solve this method using a clipped surrogate function that will stop upda
 
 In short, the PPO algorithm is as follows,
 
-'''
+<code>
     for iteration 1,2 ... N_Episodes do
         for actor = 1,2, .... N do
             Run policy pi_old for T timesteps
@@ -63,7 +63,7 @@ In short, the PPO algorithm is as follows,
         Optimize surrogate L wrt theta with K epoches
         update theta_old with theta 
     end for
-'''
+</code>
 
 ### Implementation
 
