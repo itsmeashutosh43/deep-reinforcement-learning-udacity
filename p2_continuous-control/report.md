@@ -4,7 +4,7 @@
 
 # Continous Control
 
-### Introduction
+## Introduction
 
 We have trained a double jointed arm to move to a target location. 
 
@@ -14,14 +14,14 @@ Real world control task have continous action spaces. One intuitive way to solve
 
 Therefore we have used a combination of actor-critic approach in Proximal Policy Optimization. According to OpenAI,  Proximal Policy Optimization (PPO), which perform comparably or better than state-of-the-art approaches while being much simpler to implement and tune.
 
-#### Environment
+### Environment
 
 The observation space consists of 33 variables corresponding to position, rotation, velocity, and angular velocities of the arm. Each action is a vector with four numbers, corresponding to torque applicable to two joints. Every entry in the action vector should be a number between -1 and 1. It should be noted that both the action space as well as the state space is continous. 
 
 
-### Learning Algorithm
+## Learning Algorithm
 
-#### Policy Gradient, Introduction
+### Policy Gradient, Introduction
 
 Policy gradient methods are fundamental to recent breakthroughs in using deep neural networks for control. Due to their results while working in continous space it is a defacto methods while working in continous space. Policy gradient is mainly an on policy method. It searches actions from current state. 
 
@@ -34,17 +34,17 @@ However there are many limitations of Vanilla Policy Gradients. First, it is har
 
 What if we could  somehow recycle the old trajectories, by modifying them so that they are representative of the new policy?
 
-#### Proximal Policy Method
+### Proximal Policy Method
 
-##### Importance Sampling
+#### Importance Sampling
 
 In statistics, importance sampling is a general technique for estimating properties of a particular distribution, while only having samples generated from a different distribution than the distribution of interest. Here we will use old trajectories to estimate the gradient for new policies. 
 
-##### PPO, Introduction
+#### PPO, Introduction
 
 PPO uses importance sampling to reuse trajectories ,and KL divergence, which measures the difference between two data distributions p and q, to limit how far we can change our policy in each iteration. PPO adds the divergence penalty as a soft contraint that can be optimized by a first order optimizer, hence its simplicity.  
 
-##### PPO, Discussion
+#### PPO, Discussion
 
 Since we have the approximate form of the gradient, we can think of it as the gradient of a new object, called the surrogate function. So using this new gradient, we can perform gradient ascent to update our policy — which can be thought as directly maximize the surrogate function.
 
@@ -56,16 +56,23 @@ In short, the PPO algorithm is as follows,
 
 <code>
     for iteration 1,2 ... N_Episodes do
+
         for actor = 1,2, .... N do
+
             Run policy pi_old for T timesteps
+
             Compute advantage and returns for all steps
+
         end for
+
         Optimize surrogate L wrt theta with K epoches
-        update theta_old with theta 
+
+        update theta_old with theta
+
     end for
 </code>
 
-### Implementation
+## Implementation
 
 The learning algorithm used is Proximal Policy Optimization (PPO) modified for continous action space. The input to the neural network model is observation vector (33 real numbers). The model consists of 2 seperate neural networks - actor and critic which are interfaced with one class ActorCritic.
 
@@ -73,22 +80,22 @@ The actor network takes observation as an input and outputs actions. Due to the 
 
 Action probabilites are taken from the normal distribution.
 
-### Parameters and Hyperparameters
+## Parameters and Hyperparameters
 
-#### Actor Network 
+### Actor Network 
 
 Three fully connected layers
 
 33 input nodes, 4 output nodes and hidden nodes of sizes 256 and 128 in between. 
 
 
-#### Critic Network 
+### Critic Network 
 
 Three fully connected layers
 
 4 input nodes, 1 output node and hiddent units of sizes 256 and 128 in between.
 
-#### Main hyperparameters
+### Main hyperparameters
 
     Discount rate - 0.99
     Tau - 1
@@ -99,14 +106,14 @@ Three fully connected layers
     BATCH_SIZE = 128
 
 
-### Results
+## Results
 
 The agent recieves an average score of 30 after about  iteration. The figure below shows the improvement of average score over time.
 
 ![Plot](images/plot.png)
 
 
-### Improvements
+## Improvements
 
 Hyperparameter tuning - I focused on tuning batch size and rollout length which gave major improvements. Other parameters would probably impact learning and it's worth to check how.
 
