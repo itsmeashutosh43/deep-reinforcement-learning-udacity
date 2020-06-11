@@ -110,7 +110,7 @@ Three fully connected layers
 
 ## Results
 
-The agent recieves an average score of 30 after about  iteration. The figure below shows the improvement of average score over time.
+The agent recieves an average score of 30 after about 399 iteration. The figure below shows the improvement of average score over time.
 
 ![Plot](images/plot.png)
 
