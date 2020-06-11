@@ -122,3 +122,5 @@ Hyperparameter tuning - I focused on tuning batch size and rollout length which 
 DDPG - Even though DDPG, was achieving comparable results, I gave up on it as it was learning very slowly. But it would be good to see how it actualy compares with PPO on finding the most rewards.
 
 Generalized Advantage Estimate - An exponentially-weighted estimator of advantage function can be used to hit a sweet spot between the desired bias and variance. 
+
+
