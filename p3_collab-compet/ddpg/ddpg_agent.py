@@ -1,121 +1,128 @@
-import torch
-import torch.nn as nn 
-import torch.nn.optim as optim
-import torch.nn.functional as F 
-import numpy as np 
+import numpy as np
 import random
-
-from models import Actor, Critic
-from noise import OUNoise
-from replay import ReplayBuffer
+import copy
+from collections import namedtuple, deque
 
 
-class Config:
-    def __init__(self,state_size ,action_size,random_seed,n_agents,EPISODES_ROLLOUT = 300,noise_start = 1, noise_decay = 0.99 ,noise_end = 0.1 ,buffer_size = int(1e5),batch_size = 128, gamma = 0.99,lr_actor = 1e-4,lr_critic = 1e-3,update_every = 20,epoch = 10, tau = 1e-3):
+import torch
+import torch.nn.functional as F
+import torch.optim as optim
+
+#
+x
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+class Agent():
+    
+    def __init__(self, state_size, action_size, num_agents, random_seed):
         
         self.state_size = state_size
         self.action_size = action_size
-        self.random_seed = random_seed
-        self.n_agents = n_agents
-        self.BUFFER_SIZE = buffer_size
-        self.BATCH_SIZE = batch_size
-        self.GAMMA = gamma
-        self.LR_ACTOR = lr_actor
-        self.LR_CRITIC = lr_critic
-        self.UPDATE_EVERY = update_every
-        self.EPOCH = epoch
-        self.TAU = tau
-        self.NOISE_START = noise_start
-        self.NOISE_END = noise_end
-        self.NOISE_DECAY = noise_decay
-        self.EPISODES_ROLLOUT = EPISODES_ROLLOUT
+        self.seed = random.seed(random_seed)
 
+        # Actor Network (w/ Target Network)
+        self.actor_local = Actor(state_size, action_size, random_seed).to(device)
+        self.actor_target = Actor(state_size, action_size, random_seed).to(device)
+        self.actor_optimizer = optim.Adam(self.actor_local.parameters(), lr=LR_ACTOR)
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-class DDPG:
+        # Critic Network (w/ Target Network)
+        self.critic_local = Critic(state_size*num_agents, action_size*num_agents, random_seed).to(device)
+        self.critic_target = Critic(state_size*num_agents, action_size*num_agents, random_seed).to(device)
+        self.critic_optimizer = optim.Adam(self.critic_local.parameters(), lr=LR_CRITIC, weight_decay=WEIGHT_DECAY)
 
-    def __init__(self,config):
-        self.config = config
-        self.state_size = config.state_size
-        self.action_size = config.action_size
-
-
-        self.actor_local = Actor(self.state_size,self.action_size,2).to(device)
-        self.actor_target = Actor(self.state_size, self.action_size,2).to(device)
-        self.actor_optimizer = optim.Adam(self.actor_local.parameters(), lr = config.LR_ACTOR)
-
-        self.critic_local = Critic(self.state_size* config.n_agents, self.action_size * config.n_agents,2).to(device)
-        self.critic_target = Critic(self.state_size  * config.n_agents, self.action_size * config.n_agents,2).to(device)
-        self.critic_optimizer = optim.Adam(self.critic_local.parameters(), lr = config.LR_CRITIC,)
-
-        self.memory = ReplayBuffer(config.random_seed,config.BUFFER_SIZE)
-        self.noise = OUNoise(self.action_size, config.random_seed) 
+        self.soft_update(self.critic_local, self.critic_target, 1)
+        self.soft_update(self.actor_local, self.actor_target, 1)    
         
-        self.t_step = 0
-        
-        self.soft_update(self.critic_local, self.critic_target,1)
-        self.soft_update(self.actor_local, self.actor_target,1)
+        # Noise process
+        self.noise = OUNoise(action_size, random_seed)
+        self.noise_reduction_ratio = NOISE_START
 
-        self.noise_factor = config.NOISE_START
+        self.step_count = 0
 
-
-    def reset(self):
-        self.noise.reset()
-
-    def act(self, state,episode, add_noise=True):
+    def act(self, state, i_episode, add_noise=True):
         """Returns actions for given state as per current policy."""
-
-        if episode > self.config.EPISODES_ROLLOUT:
-            self.noise_factor = max(self.config.NOISE_END, self.config.NOISE_DECAY ** (episode - EPISODES_ROLLOUT))
-
-
         state = torch.from_numpy(state).float().to(device)
         self.actor_local.eval()
         with torch.no_grad():
             action = self.actor_local(state).cpu().data.numpy()
-        self.actor_local.train()        
+        self.actor_local.train()
         
-        action += self.noise_factor * self.add_noise2()
+        if add_noise:
+            if i_episode > EPISODES_BEFORE_TRAINING and self.noise_reduction_ratio > NOISE_END:
+                self.noise_reduction_ratio = NOISE_REDUCTION_RATE**(i_episode-EPISODES_BEFORE_TRAINING)
+#             noise_reduction_ratio = 1
+            action += self.noise_reduction_ratio * self.add_noise2()
+#             action += noise_reduction_ratio * self.noise.sample()
         return np.clip(action, -1, 1)
 
+    def add_noise2(self):
+#         noise = 0.5*np.random.randn(1,self.action_size) #sigma of 0.5 as sigma of 1 will have alot of actions just clipped
+        noise = 0.5*np.random.standard_normal(self.action_size)
+        return noise
     
+    def reset(self):
+        self.noise.reset()
+
     def learn(self, experiences, gamma):
-        full_states, actor_full_actions, full_actions, agent_rewards, agent_dones, full_next_states, critic_full_next_actions = experiences
         
-        Q_targets_next = self.critic_target(full_next_states, critic_full_next_actions)
-        Q_targets = agent_rewards + (self.config.GAMMA * Q_targets_next * (1 - agent_dones))
-        Q_expected = self.critic_local(full_states, full_actions)
+        full_states, actions, actor_local_actions, actor_target_actions, agent_state, agent_action, agent_reward, agent_done, next_states, next_full_states = experiences
+        Q_targets_next = self.critic_target(next_full_states, actor_target_actions)
+        # Compute Q targets for current states (y_i)
+        Q_targets = agent_reward + (gamma * Q_targets_next * (1 - agent_done))
+        # Compute critic loss
+        Q_expected = self.critic_local(full_states, actions)
         critic_loss = F.mse_loss(Q_expected, Q_targets)
-        
         # Minimize the loss
         self.critic_optimizer.zero_grad()
         critic_loss.backward()
         self.critic_optimizer.step()
 
-        actor_loss = -self.critic_local(full_states, actor_full_actions).mean()
+        # ---------------------------- update actor ---------------------------- #
+        # Compute actor loss
+#         actions_pred = self.actor_local(agent_state)
+        actor_loss = -self.critic_local(full_states, actor_local_actions).mean()
         # Minimize the loss
         self.actor_optimizer.zero_grad()
         actor_loss.backward()
         self.actor_optimizer.step()
 
-
-    def soft_update_all(self):
-        # ----------------------- update target networks ----------------------- #
-        self.soft_update(self.critic_local, self.critic_target,self.config.TAU)
-        self.soft_update(self.actor_local, self.actor_target,self.config.TAU) 
-
-    
-    def add_noise2(self):
-        noise = 0.5*np.random.randn(1,self.action_size) #sigma of 0.5 as sigma of 1 will have alot of actions just clipped
-        return noise  
-        
-                   
-
+    def hard_copy_weights(self, target, source):
+        """ copy weights from source to target network (part of initialization)"""
+        for target_param, param in zip(target.parameters(), source.parameters()):
+            target_param.data.copy_(param.data)
+            
     def soft_update(self, local_model, target_model, tau):
+        """Soft update model parameters.
+        θ_target = τ*θ_local + (1 - τ)*θ_target
+        Params
+        ======
+            local_model: PyTorch model (weights will be copied from)
+            target_model: PyTorch model (weights will be copied to)
+            tau (float): interpolation parameter 
+        """
         for target_param, local_param in zip(target_model.parameters(), local_model.parameters()):
-            target_param.data.copy_(tau*local_param.data + (1.0-tau)*target_param.data) 
+            target_param.data.copy_(tau*local_param.data + (1.0-tau)*target_param.data)
 
+class OUNoise:
+    """Ornstein-Uhlenbeck process."""
 
+    def __init__(self, size, seed, mu=0., theta=0.15, sigma=0.1):
+        """Initialize parameters and noise process."""
+        self.mu = mu * np.ones(size)
+        self.theta = theta
+        self.sigma = sigma
+        self.seed = random.seed(seed)
+        self.reset()
+        self.size = size
 
+    def reset(self):
+        """Reset the internal state (= noise) to mean (mu)."""
+        self.state = copy.copy(self.mu)
 
-
+    def sample(self):
+        """Update internal state and return it as a noise sample."""
+        x = self.state
+#         dx = self.theta * (self.mu - x) + self.sigma * np.array([random.random() for i in range(len(x))])
+        dx = self.theta * (self.mu - x) + self.sigma * np.random.standard_normal(self.size)
+        self.state = x + dx
+        return self.state
